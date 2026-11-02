@@ -27,3 +27,7 @@ Limits: 3 jobs at once, 1 GB per video, 60 minutes per job, 50 videos per playli
 - Uploads go through ffmpeg with `-protocol_whitelist file` and a container whitelist, so a playlist (HLS, concat) can't pull in other files such as `/secrets/cookies.txt`.
 - A job slot is reserved before any await, and at most 10 jobs (running or waiting to be collected) are held at once. A failed job is freed once its error has been polled.
 - `bun test` covers the address check and the yt-dlp flags.
+- dl runs on its own Docker network, `dl-edge` (172.30.0.0/24), shared only with Caddy, so it can't reach the other apps. `ops/egress.sh`, applied by `ops/dl-egress.service`, stops that network opening connections to private, loopback, CGNAT and link-local addresses, which includes Hetzner's metadata service. This is what actually enforces the address rules; the check in `server.ts` is a first gate. One-time setup on the VPS:
+
+      docker network create --subnet 172.30.0.0/24 dl-edge
+      cp /root/dl/ops/dl-egress.service /etc/systemd/system/ && systemctl daemon-reload && systemctl enable --now dl-egress

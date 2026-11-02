@@ -5,8 +5,11 @@ services:
     volumes:
       - ./secrets:/secrets
     networks:
-      edge:
+      dl-edge:
         aliases: [dl]
+# Own network shared only with Caddy, so dl can't reach the other apps; ops/egress.sh
+# firewalls it off from private and metadata addresses. Create once:
+#   docker network create --subnet 172.30.0.0/24 dl-edge
 networks:
-  edge:
+  dl-edge:
     external: true

@@ -1,0 +1,13 @@
+[Unit]
+Description=Block dl container egress to private and metadata addresses
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/root/dl/ops/egress.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target docker.service
