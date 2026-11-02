@@ -20,3 +20,10 @@ YouTube breaks old yt-dlp versions often, so the server runs `yt-dlp -U` at boot
 When the bot error comes back, the cookies have expired: repeat the steps. Locally, without `/secrets/cookies.txt`, yt-dlp runs without cookies.
 
 Limits: 3 jobs at once, 1 GB per video, 60 minutes per job, 50 videos per playlist (zipped). A watch link inside a playlist downloads just that video. Progress is polled from `/api/jobs/:id`; uncollected files are dropped after ~70 minutes.
+
+## Hardening
+
+- yt-dlp runs with `--use-extractors default,-generic`, so it only follows links one of its site extractors recognises. Direct links to media files and unknown sites are refused; that is the price of not letting a pasted link reach internal addresses. Links whose host resolves to a private, loopback, link-local or CGNAT address are refused before yt-dlp starts.
+- Uploads go through ffmpeg with `-protocol_whitelist file` and a container whitelist, so a playlist (HLS, concat) can't pull in other files such as `/secrets/cookies.txt`.
+- A job slot is reserved before any await, and at most 10 jobs (running or waiting to be collected) are held at once. A failed job is freed once its error has been polled.
+- `bun test` covers the address check and the yt-dlp flags.

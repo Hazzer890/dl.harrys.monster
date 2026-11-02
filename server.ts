@@ -1,10 +1,13 @@
+import { lookup } from "node:dns/promises";
 import { existsSync } from "node:fs";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { BlockList } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const PORT = Number(process.env.PORT ?? 3000);
 const MAX_JOBS = 3; // ponytail: global cap, per-IP limits if it gets abused
+const MAX_PENDING = 10; // running plus finished-but-uncollected jobs, each holding files on disk
 const MAX_ITEMS = 50;
 const TIMEOUT_MS = 60 * 60_000;
 const COOKIES = process.env.COOKIES ?? "/secrets/cookies.txt"; // burner Google account, see README
@@ -16,6 +19,25 @@ const jobs = new Map<string, Job>();
 let running = 0;
 
 const fail = (status: number, error: string) => Response.json({ error }, { status });
+
+// Loopback, private, link-local, CGNAT, cloud metadata and reserved ranges. Docker service
+// names (analytics, caddy, ...) resolve into 172.16/12, so they are covered too.
+const blocked = new BlockList();
+for (const [net, bits] of [["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8], ["169.254.0.0", 16],
+  ["172.16.0.0", 12], ["192.0.0.0", 24], ["192.168.0.0", 16], ["198.18.0.0", 15], ["224.0.0.0", 3]] as const)
+  blocked.addSubnet(net, bits);
+for (const [net, bits] of [["::", 128], ["::1", 128], ["fc00::", 7], ["fe80::", 10], ["ff00::", 8]] as const)
+  blocked.addSubnet(net, bits, "ipv6");
+
+// True only if every address the host resolves to is public. A first gate: yt-dlp runs
+// with the generic extractor off, so it only follows links its site extractors recognise.
+export async function isPublicHost(host: string) {
+  const addrs = await lookup(host.replace(/^\[|\]$/g, ""), { all: true }).catch(() => []);
+  return addrs.length > 0 && addrs.every(({ address, family }) => {
+    const v4 = address.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i)?.[1];
+    return v4 ? !blocked.check(v4) : !blocked.check(address, family === 6 ? "ipv6" : "ipv4");
+  });
+}
 
 async function eachLine(s: ReadableStream<Uint8Array>, f: (l: string) => void) {
   let buf = "";
@@ -47,7 +69,7 @@ export function ytdlpArgs(url: string, format: string) {
     : ["-f", "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b", "--merge-output-format", "mp4"];
   const cookies = existsSync(COOKIES) ? ["--cookies", COOKIES] : [];
   return ["yt-dlp", ...cookies, "--no-playlist", "-I", `:${MAX_ITEMS}`, "--ignore-errors", "--js-runtimes", "bun",
-    "--max-filesize", "1G", "--embed-metadata", "--newline", "--no-colors",
+    "--use-extractors", "default,-generic", "--max-filesize", "1G", "--embed-metadata", "--newline", "--no-colors",
     "--progress-template", "download:@@%(info.playlist_index)s|%(info.n_entries)s|%(progress._percent_str)s|%(info.playlist_title)s",
     ...fmt, "-o", "%(playlist_index&{} - |)s%(title).150B.%(ext)s", "--", url];
 }
@@ -76,8 +98,8 @@ async function finish(job: Job, err: string) {
   job.file = zip;
 }
 
+// The caller has already reserved the slot (running++); this releases it.
 async function start(job: Job, cmd: string[], onLine: (l: string) => void) {
-  running++;
   try {
     await finish(job, await run(job, cmd, onLine));
     job.pct = 100;
@@ -96,6 +118,7 @@ async function create(req: Request, path: string) {
     try { u = new URL(src); } catch { return fail(400, "That isn't a valid link"); }
     if (!/^https?:$/.test(u.protocol)) return fail(400, "Link must start with http(s)://");
     if (format !== "mp3" && format !== "mp4") return fail(400, "Pick mp3 or mp4");
+    if (!(await isPublicHost(u.hostname))) return fail(400, "That link doesn't point at a public site");
     const job = await newJob("Starting");
     start(job, ytdlpArgs(u.href, format), (l) => ytdlpProgress(job, l));
     return job;
@@ -107,7 +130,10 @@ async function create(req: Request, path: string) {
   const job = await newJob("Converting");
   await Bun.write(join(job.dir, "in.bin"), file);
   let dur = 0;
-  start(job, ["ffmpeg", "-nostdin", "-nostats", "-i", "in.bin", "-vn", "-c:a", "libmp3lame", "-q:a", "0",
+  // Only plain local reads of ordinary containers: no playlists (hls, concat) that could
+  // pull in other files such as /secrets, and no network protocols.
+  start(job, ["ffmpeg", "-nostdin", "-nostats", "-protocol_whitelist", "file",
+    "-format_whitelist", "mov,mp4,matroska,webm,avi,flv,mpegts,mpeg,mp3,wav,ogg,aac,flac,asf", "-i", "in.bin", "-vn", "-c:a", "libmp3lame", "-q:a", "0",
     "-progress", "pipe:1", `${base}.mp3`], (l) => {
     const d = l.match(/Duration: (\d+):(\d+):([\d.]+)/);
     if (d) dur = (+d[1] * 3600 + +d[2] * 60 + +d[3]) * 1e6;
@@ -129,6 +155,7 @@ function drop(id: string) {
   if (job) void rm(job.dir, { recursive: true, force: true });
 }
 
+if (import.meta.main) {
 Bun.serve({
   port: PORT,
   maxRequestBodySize: 1024 ** 3,
@@ -139,15 +166,19 @@ Bun.serve({
     if (req.method === "GET" && pathname === "/theme.css") return new Response(theme);
 
     if (req.method === "POST" && (pathname === "/api/url" || pathname === "/api/file")) {
-      if (running >= MAX_JOBS) return fail(429, "Busy, try again in a minute");
-      const res = await create(req, pathname);
-      return res instanceof Response ? res : Response.json({ id: res.id });
+      if (running >= MAX_JOBS || jobs.size >= MAX_PENDING) return fail(429, "Busy, try again in a minute");
+      running++; // reserve the slot before any await, or a burst of requests all pass the check
+      let res: Response | Job;
+      try { res = await create(req, pathname); } catch (e) { running--; throw e; }
+      if (res instanceof Response) { running--; return res; }
+      return Response.json({ id: res.id });
     }
 
     const m = pathname.match(/^\/api\/jobs\/([\w-]+)(\/file)?$/);
     const job = m && jobs.get(m[1]);
     if (req.method !== "GET" || !job) return fail(404, "Not found");
-    if (!m[2]) return Response.json({ pct: job.pct, msg: job.msg, error: job.error, done: !!job.file });
+    if (job.error) { drop(m[1]); return Response.json({ error: job.error }); } // reported once, then freed
+    if (!m[2]) return Response.json({ pct: job.pct, msg: job.msg, done: !!job.file });
     if (!job.file) return fail(409, "Not ready");
     const file = Bun.file(join(job.dir, job.file));
     const body = file.stream().pipeThrough(new TransformStream({ flush: () => drop(m[1]) }));
@@ -172,3 +203,4 @@ update();
 setInterval(update, 24 * 3600_000);
 
 console.log(`dl listening on :${PORT}`);
+}
