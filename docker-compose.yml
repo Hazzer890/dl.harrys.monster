@@ -1,0 +1,12 @@
+services:
+  dl:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - ./secrets:/secrets
+    networks:
+      edge:
+        aliases: [dl]
+networks:
+  edge:
+    external: true

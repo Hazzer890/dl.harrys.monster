@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Turn a YouTube link into an MP3 or MP4, or an MP4 file into an MP3.">
+  <meta name="theme-color" content="#f5f7fc">
+  <link rel="canonical" href="https://dl.harrys.monster/">
+  <title>YouTube and MP4 to MP3 | Harry Cassidy</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%232563eb'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='JetBrains Mono,ui-monospace,monospace' font-size='30' font-weight='700' fill='%23fafafa'>h<tspan fill='%23dbeafe'>.</tspan>m</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 18'><path fill='%233b5bdb' d='M12 11.19c5.65 0 8.61-6.28 5.98-10.64-.17-.29.15-.69.43-.51C21.77 2.19 24 5.99 24 10.26c0 2.91-1 5.5-2.76 7.58l-3.11-1.07c.6-.56 1.12-1.2 1.55-1.9.98-1.6-1.22-2.59-2.92-1.78-1.44.69-3.05 1.08-4.75 1.08s-3.31-.39-4.75-1.08c-1.69-.81-3.89.17-2.92 1.78.42.69.94 1.33 1.55 1.9l-3.13 1.08C1 15.76 0 13.18 0 10.26 0 5.99 2.23 2.19 5.59.04c.28-.18.6.22.43.51C3.39 4.9 6.35 11.19 12 11.19z'/></svg>">
+  <link rel="stylesheet" href="/theme.css">
+  <style>
+    .app { max-width: 720px; }
+    .intro { margin: 0 0 1.5rem; color: var(--ink-soft); }
+    .intro h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 .4rem; color: var(--ink); }
+    .card { padding: clamp(20px, 4vw, 32px); display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.6rem; }
+    form { display: grid; grid-template-columns: minmax(0, 1fr); gap: .6rem; }
+    label { font-weight: 500; }
+    .hint { color: var(--ink-mute); font-size: .9rem; margin-top: -.4rem; }
+    .row { display: flex; gap: .5rem; flex-wrap: wrap; }
+    hr { border: 0; border-top: 1px solid var(--line); }
+    button:disabled { cursor: wait; }
+    progress { width: 100%; height: 8px; margin-top: 1.4rem; accent-color: var(--accent); }
+    #status { margin-top: .6rem; color: var(--ink-soft); }
+    #status:empty { display: none; }
+    #status.error { color: var(--danger); }
+  </style>
+<script>
+(function(){var A='https://analytics.harrys.monster/e',v;
+try{v=localStorage.getItem('_aid')||crypto.randomUUID();localStorage.setItem('_aid',v)}catch(e){v='anon'}
+var t0=Date.now(),ms=0,lcp=0,cls=0,de=document.documentElement;
+function send(o){o.vid=v;o.site=location.host;o.path=location.pathname+location.hash;
+try{navigator.sendBeacon(A,JSON.stringify(o))}catch(e){}}
+function pv(){send({t:'pv',ref:document.referrer,q:location.search,ti:document.title,
+lang:navigator.language,tz:Intl.DateTimeFormat().resolvedOptions().timeZone,
+sw:screen.width,sh:screen.height,w:innerWidth,h:innerHeight,dw:de.scrollWidth,dh:de.scrollHeight})}
+pv();addEventListener('hashchange',pv);
+try{new PerformanceObserver(function(l){var e=l.getEntries();lcp=Math.round(e[e.length-1].startTime)}).observe({type:'largest-contentful-paint',buffered:true});
+new PerformanceObserver(function(l){l.getEntries().forEach(function(e){if(!e.hadRecentInput)cls+=e.value})}).observe({type:'layout-shift',buffered:true})}catch(e){}
+addEventListener('scroll',function(){var s=(scrollY+innerHeight)/de.scrollHeight*100;if(s>ms)ms=s},{passive:true});
+addEventListener('click',function(e){var el=e.target.closest?e.target.closest('a,button,[data-track]')||e.target:e.target;
+var cn=typeof el.className=='string'&&el.className.trim()?'.'+el.className.trim().split(/\s+/).slice(0,2).join('.'):'';
+var o={t:'click',x:e.pageX,y:e.pageY,w:innerWidth,dw:de.scrollWidth,dh:de.scrollHeight,
+sel:(el.tagName.toLowerCase()+(el.id?'#'+el.id:cn)).slice(0,140)};
+var a=e.target.closest&&e.target.closest('a');if(a&&a.host&&a.host!=location.host)o.out=a.href;
+send(o)},true);
+addEventListener('error',function(e){send({t:'error',name:String(e.message||'error').slice(0,200),
+props:{src:String(e.filename||'').slice(0,200),line:e.lineno,col:e.colno}})});
+addEventListener('visibilitychange',function(){if(document.visibilityState=='hidden'){var n=performance.getEntriesByType('navigation')[0];
+send({t:'leave',dur:Math.round((Date.now()-t0)/1e3),scroll:Math.round(Math.min(ms,100)),
+lcp:lcp,cls:Math.round(cls*1000),load:n&&n.loadEventEnd?Math.round(n.loadEventEnd):0})}});
+window.track=function(n,p){send({t:'custom',name:n,props:p})};
+})();
+</script>
+</head>
+<body>
+  <header class="header">
+    <nav class="nav" aria-label="Primary">
+      <a href="https://harrys.monster" class="nav-logo" aria-label="Harry Cassidy, home"><svg class="nav-mark" viewBox="0 0 24 18" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 11.19c5.65 0 8.61-6.28 5.98-10.64-.17-.29.15-.69.43-.51C21.77 2.19 24 5.99 24 10.26c0 2.91-1 5.5-2.76 7.58l-3.11-1.07c.6-.56 1.12-1.2 1.55-1.9.98-1.6-1.22-2.59-2.92-1.78-1.44.69-3.05 1.08-4.75 1.08s-3.31-.39-4.75-1.08c-1.69-.81-3.89.17-2.92 1.78.42.69.94 1.33 1.55 1.9l-3.13 1.08C1 15.76 0 13.18 0 10.26 0 5.99 2.23 2.19 5.59.04c.28-.18.6.22.43.51C3.39 4.9 6.35 11.19 12 11.19z"/></svg></a>
+      <span class="nav-title">dl</span>
+    </nav>
+  </header>
+
+  <main class="app container">
+    <div class="intro">
+      <h1>YouTube / MP4 to MP3</h1>
+      <p>Paste a video or playlist link, or drop in a video file, and get the audio back.</p>
+    </div>
+
+    <div class="card">
+      <form id="url-form">
+        <label for="url">Video or playlist link</label>
+        <p class="hint">YouTube or most other sites. Playlists come as a zip, up to 50 videos.</p>
+        <input id="url" name="url" type="url" required placeholder="https://www.youtube.com/watch?v=...">
+        <div class="row">
+          <button class="btn btn-primary" name="format" value="mp3">Download MP3</button>
+          <button class="btn btn-ghost" name="format" value="mp4">Download MP4</button>
+        </div>
+      </form>
+
+      <hr>
+
+      <form id="file-form">
+        <label for="file">Or convert a video file to MP3</label>
+        <input id="file" name="file" type="file" accept="video/*,audio/*" required>
+        <div class="row"><button class="btn btn-ghost">Convert to MP3</button></div>
+      </form>
+    </div>
+
+    <progress id="bar" max="100" hidden></progress>
+    <p id="status" role="status" aria-live="polite"></p>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Only download things you have the right to. Files are deleted from the server as soon as they're sent, or after an hour.</p>
+      <p>Harry Cassidy &copy; 2026 · <a href="https://harrys.monster">harrys.monster</a></p>
+    </div>
+  </footer>
+
+  <script>
+    const status = document.getElementById('status');
+    const bar = document.getElementById('bar');
+    const buttons = document.querySelectorAll('button');
+
+    function show(msg, pct) {
+      status.textContent = msg;
+      bar.hidden = false;
+      if (pct == null) bar.removeAttribute('value'); else bar.value = pct;
+    }
+
+    function upload(form) {
+      return new Promise((resolve, reject) => {
+        const x = new XMLHttpRequest();
+        x.open('POST', '/api/file');
+        x.responseType = 'json';
+        x.upload.onprogress = e => show('Uploading', e.loaded / e.total * 100);
+        x.onload = () => x.status < 300 ? resolve(x.response) : reject(new Error(x.response?.error || 'Upload failed'));
+        x.onerror = () => reject(new Error('Upload failed'));
+        x.send(new FormData(form));
+      });
+    }
+
+    async function go(startJob) {
+      buttons.forEach(b => b.disabled = true);
+      status.className = '';
+      show('Starting', null);
+      try {
+        const { id } = await startJob();
+        for (;;) {
+          const j = await (await fetch('/api/jobs/' + id)).json();
+          if (j.error) throw new Error(j.error);
+          show(j.msg + (j.pct == null ? '' : ' ' + Math.floor(j.pct) + '%'), j.pct);
+          if (j.done) { location.href = '/api/jobs/' + id + '/file'; break; }
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      } catch (e) {
+        bar.hidden = true;
+        status.className = 'error';
+        status.textContent = e.message;
+      } finally {
+        buttons.forEach(b => b.disabled = false);
+      }
+    }
+
+    document.getElementById('url-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const body = JSON.stringify({ url: e.target.url.value, format: e.submitter.value });
+      go(async () => {
+        const res = await fetch('/api/url', { method: 'POST', body, headers: { 'Content-Type': 'application/json' } });
+        const j = await res.json();
+        if (!res.ok) throw new Error(j.error);
+        return j;
+      });
+    });
+    document.getElementById('file-form').addEventListener('submit', e => {
+      e.preventDefault();
+      go(() => upload(e.target));
+    });
+  </script>
+</body>
+</html>
